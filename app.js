@@ -2,7 +2,7 @@ const inicioDebug = require('debug')('app:inicio'); // Importar el paquete Debug
                                             // El parametro indica el archivo y el entorno
                                             // de depuración.
 const dbDebug = require('debug')('app:db');
-
+const usuarios = require('./routes/usuarios');
 const express = require('express'); // Importa el paquete express
 const config = require('config'); // Exporrta el paquete config
 const logger = require('./logger');
@@ -28,11 +28,20 @@ app.use(express.json()); // Le decimos a Express que use este
 app.use(express.static('public')); // Nombre de la carpeta que tendra los archivos
                                    // (recursos estáticos)
 
+app.use('/api/usuarios', usuarios); // Middleware que importamos
+// El primer parámetro es la ruta raíz asociada con las peticiones a los
+// datos de usuario. La ruta raíz se va a concatenar como prefijo
+// al inicio de todas las rutas definidas en el archivo usuarios.
+app.use(express.urlencoded({extended:true})); // Nuevo Middleware
+                                              // Define el uso de la libreria qa para
+                                              // separar la información codificada en
+                                              // el url.
+
 console.log(`Aplicación: ${config.get('nombre')}`);       
 console.log(`BD server: ${config.get(`configDB.host`)}`);     
 
 if(app.get('env') === 'development'){
-    app.use(morgan('tiny'));
+    //app.use(morgan('tiny'));
     //console.log('Morgan habilitado...');
     // Muestra el mensaje de depuración
     inicioDebug('Morgan esta habilitado...');
@@ -41,10 +50,7 @@ if(app.get('env') === 'development'){
 dbDebug('Conectado con la base de datos...');
 
 
-app.use(express.urlencoded({extended:true})); // Nuevo Middleware
-                                              // Define el uso de la libreria qa para
-                                              // separar la información codificada en
-                                              // el url.
+
 /*
 app.use(logger); // logger ya hacé referencia a la funcion log de logger.js
                  // debido al exports
@@ -59,25 +65,7 @@ app.use(function(req, res, next){
 // las funciones de ruta GET, POST, PUT, DELETE
 // para que estas puedan trabajar.
 
-const usuarios = [
-    {id:1, nombre: 'Juan'},
-    {id:2, nombre: 'Karen'},
-    {id:3, nombre: 'Diego'},
-    {id:4, nombre: 'Maria'},
-];
 
-function existeUsuario(id){
-    return (usuarios.find(u => u.id === parseInt(id)));
-}
-
-function validarUsuario(nom){
-    const schema = Joi.object({
-        nombre: Joi.string()
-                .min(3)
-                .required()
-    });
-    return (schema.validate({nombre:nom}));
-}
 
 // Consulta en la raíz del sitio
 // Toda peticion siempre va a recibir dos parámetros
@@ -89,154 +77,21 @@ app.get('/', (req, res) => {
     res.send('¡Hola mundo desde Express!');
 });
 
-app.get('/api/usuarios', (req, res) => {
-    res.send(usuarios);
-});
 
-// Con los : delante del id
-// Express sabe que es un parámetro a recibir en la ruta
 
-app.get('/api/usuarios/:id', (req, res) =>{
-    // En el puerto del objeto req está la propiedad
-    // params, que guarda los párametros enviados.
-    //const array = ['Jorge', 'Ana', 'Karen', 'Luis'];
-    //const pos = req.params.id;
-    // Los parametros en re.params se reciben como strings
-    // parseInt, hace el casteo a valores enteros directamente.
-    //const id = parseInt(req.params.id);
-    // Devuelve el primer usuario que cumpla con el predicado
-    //const usuario = usuarios.find(u => u.id === id);
-    const id = req.params.id;
-    let usuario = existeUsuario(req.params.id);
-    if(!usuario){
-        res.status(404).send(`El usuario ${id} no se encuentra!`);
-        return;
-    }
-    //res.send(req.params.id);
-    res.send(usuario);
-    //res.send(array[pos]);
-    return;
-});
 
 // Recibiendo varios parámetros
 // Se pasan dos parámetros year y month
 // Query string
 // localhost:5000/1990/2/?nombrexxxx&single=y
 
+/*
 app.get('/api/usuarios/:year/:month', (req, res) => {
     // En el cuerpo de req está la propiedad
     // query, que guarda los parámetros Query String.
     res.send(req.query); //params
 });
-
-// La ruta tiene el mismo nombre que la peticion GET
-// Express hace la diferencia dependiendo del tipo
-// de petición
-// La petición POST la vamos a utilizar para insertar
-// un nuevo usuario en nuetro arreglo
-
-app.post('/api/usuarios', (req, res) => {
-    // El objeto request tiene la propiedad body
-    // que va a venir en formato JSON
-    // Creación del schema Joi
-    
-    /*
-    const schema = Joi.object({
-        nombre: Joi.string()
-                   .min(3)
-                   .required()
-    });
-    const {error, value} = schema.validate({nombre: req.body.nombre});
-    */
-   /*
-    let body = req.body;
-    console.log(body.nombre);
-    res.json({
-        body
-    });
-    */
-    
-    const {error, value} = validarUsuario(req.body.nombre);
-    if(!error){
-        const usuario = {
-            id: usuarios.length + 1,
-            nombre: req.body.nombre
-        };
-        usuarios.push(usuario);
-        res.send(usuario);
-    }else{
-        const mensaje = error.details[0].message;
-        res.status(400).send(mensaje);
-    }
-    
-
-    
-    // if(!req.body.nombre || req.body.nombre.length <= 2){
-    //     //Código 400: Bad Request
-    //     res.status(400).send('Debe ingresar un nombre que tenga al menos 3 letras.');
-    //     return; // Es necesario para que no continúe el método
-    // }
-
-    // const usuario = {
-    //     id: usuarios.length + 1,
-    //     nombre: req.body.nombre
-    // };
-    // usuarios.push(usuario);
-    // res.send(usuario);
-    return;
-});
-
-// Peticion para modificar datoa existentes
-    // Este método debe recibir un párametro 
-    // id para saber que usuario modificar 
-    app.put('/api/usuarios/:id', (req, res) => {
-        // Encontar si existe el usuario a modificar 
-        // parseInt. hace el casteo a valores entereros directamente
-        //const id = parseInt(req.params.id);
-        // Devuelve el primer usuario que cumpla con el predicado
-        //const usuario = usuarios.find(u => u.id === id);
-        let usuario = existeUsuario(req.params.id);
-        if(!usuario){
-            res.status(404).send('El usuario no se encuentra'); // Devuelve el estado HTTP
-            return;
-        }
-        // Validar si el dato recibido es correcto
-        const {error, value} = validarUsuario(req.body.nombre);
-        /*const schema = Joi.object({
-            nombre: Joi.string()
-                    .min(3)
-                    .required()
-        });
-        const {error, value} = schema.validate({nombre: req.body.nombre});
-        */
-        
-        if(!error){
-            // Actualiza el nombre
-            usuario.nombre = value.nombre;
-            res.send(usuario);
-        }
-        else{
-            const mensaje = error.details[0].message;
-            res.status(400).send(mensaje);
-        }
-        return;
-    });
-
-// Recibe como parámetro el id del usuario 
-// que se va a eliminar
-app.delete('/api/usuarios/:id', (req, res) => {
-    const usuario = existeUsuario(req.params.id);
-    if (!usuario){
-        res.status(404).send('El usuario no se encuentra'); // Devuelve el estado HTTP
-        return;
-    }
-    // Encontrar el indice del usuario dentro del arreglo
-    const index = usuarios.indexOf(usuario);
-    usuarios.splice(index, 1); //Elimina el elemento en el indice 
-    res.send(usuario); // Se responde con el usuario eliminado
-    return;
-});
-    
+*/
 
 
 app.get('/api/productos', (req, res) => {
