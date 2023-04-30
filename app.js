@@ -3,8 +3,9 @@ const inicioDebug = require('debug')('app:inicio'); // Importar el paquete Debug
                                             // de depuración.
 const dbDebug = require('debug')('app:db');
 const usuarios = require('./routes/usuarios');
+const productos = require('./routes/productos');
 const express = require('express'); // Importa el paquete express
-const config = require('config'); // Exporrta el paquete config
+const config = require('config'); // Exporta el paquete config
 const logger = require('./logger');
 const morgan = require('morgan');
 const Joi = require('joi');
@@ -32,6 +33,9 @@ app.use('/api/usuarios', usuarios); // Middleware que importamos
 // El primer parámetro es la ruta raíz asociada con las peticiones a los
 // datos de usuario. La ruta raíz se va a concatenar como prefijo
 // al inicio de todas las rutas definidas en el archivo usuarios.
+
+app.use('/api/productos', productos);
+
 app.use(express.urlencoded({extended:true})); // Nuevo Middleware
                                               // Define el uso de la libreria qa para
                                               // separar la información codificada en
@@ -94,9 +98,7 @@ app.get('/api/usuarios/:year/:month', (req, res) => {
 */
 
 
-app.get('/api/productos', (req, res) => {
-    res.send(['mouse', 'teclado', 'bocinas']);
-});
+
 
 // El módulo process, contiene información del sistema
 // El objeto env contiene información de las variables 
